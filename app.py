@@ -25,7 +25,7 @@ min_volume = int(df["Trade_Volume"].min())
 max_volume = int(df["Trade_Volume"].max())
 volume_range = st.sidebar.slider("Trade Volume Range", min_value=min_volume, max_value=max_volume, value=(min_volume, max_volume))
 
-if page == "Raw Data Viewer":
+if page == " Raw Data Viewer":
     st.title("Raw Dataset Viewer")
     selected_companies = st.multiselect("Filter by Companies", companies, default=companies)
     selected_dates = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
@@ -116,7 +116,24 @@ else:
         range_y=[0, df["Trade_Volume"].max()],
         title="Trade Volume by Company Over Time"
     )
-    st.plotly_chart(fig9)
+    fig9.update_layout(
+    updatemenus=[{
+        "type": "buttons",
+        "buttons": [
+            {
+                "label": "Play",
+                "method": "animate",
+                "args": [None, {"frame": {"duration": 1000, "redraw": True}, "fromcurrent": True}]
+            },
+            {
+                "label": "Pause",
+                "method": "animate",
+                "args": [[None], {"frame": {"duration": 0}, "mode": "immediate"}]
+            }
+        ]
+    }]
+)
+st.plotly_chart(fig9)
 
-    st.markdown("---")
-    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
+st.markdown("---")
+st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
