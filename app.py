@@ -6,84 +6,117 @@ import os
 
 # Check if file exists
 file_path = "5 days data set.csv"
+if not os.path.exists(file_path):
+    st.error("Data file not found. Please ensure '5 days data set.csv' is in the app directory.")
+    st.stop()
 
 # Load and prepare data
 df = pd.read_csv(file_path)
 df.columns = df.columns.str.strip().str.replace(r"[^\w\s]", "", regex=True).str.replace(" ", "_")
 df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
 
-# Sidebar filters
-st.sidebar.title("Filter Options")
-companies = sorted(df["Company_Name"].unique())
-selected_company = st.sidebar.selectbox("Select a Company", companies)
-date_range = st.sidebar.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
+# Page configuration
+st.set_page_config(page_title="Stock Dashboard", layout="wide")
+page = st.sidebar.radio("Navigate", ["Raw Data Viewer", "Data Visualizations"])
 
-# New filters
+# Common Sidebar Filters
+companies = sorted(df["Company_Name"].unique())
 min_volume = int(df["Trade_Volume"].min())
 max_volume = int(df["Trade_Volume"].max())
 volume_range = st.sidebar.slider("Trade Volume Range", min_value=min_volume, max_value=max_volume, value=(min_volume, max_volume))
 
-price_metric = st.sidebar.selectbox("Price Metric to Highlight", ["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"])
+if page == "Raw Data Viewer":
+    st.title("Raw Dataset Viewer")
+    selected_companies = st.multiselect("Filter by Companies", companies, default=companies)
+    selected_dates = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
 
-# Apply filters
-filtered_df = df[(df["Company_Name"] == selected_company) &
-                 (df["Date"] >= pd.to_datetime(date_range[0])) &
-                 (df["Date"] <= pd.to_datetime(date_range[1])) &
-                 (df["Trade_Volume"] >= volume_range[0]) &
-                 (df["Trade_Volume"] <= volume_range[1])]
+    raw_filtered = df[(df["Company_Name"].isin(selected_companies)) &
+                      (df["Date"] >= pd.to_datetime(selected_dates[0])) &
+                      (df["Date"] <= pd.to_datetime(selected_dates[1])) &
+                      (df["Trade_Volume"] >= volume_range[0]) &
+                      (df["Trade_Volume"] <= volume_range[1])]
+    st.dataframe(raw_filtered)
 
-st.title("Sri Lankan Stock Market Dashboard")
-st.markdown(f"### Overview for {selected_company}")
+else:
+    st.title("Sri Lankan Stock Market Dashboard")
+    selected_company = st.sidebar.selectbox("Select a Company", companies)
+    date_range = st.sidebar.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
+    price_metric = st.sidebar.selectbox("Price Metric to Highlight", ["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"])
 
-# 1. Price Trends
-fig1 = px.line(filtered_df, x="Date", y=["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"],
-               title="Stock Prices Over Time", labels={"value": "Price (Rs.)", "variable": "Metric"})
-st.plotly_chart(fig1)
+    filtered_df = df[(df["Company_Name"] == selected_company) &
+                     (df["Date"] >= pd.to_datetime(date_range[0])) &
+                     (df["Date"] <= pd.to_datetime(date_range[1])) &
+                     (df["Trade_Volume"] >= volume_range[0]) &
+                     (df["Trade_Volume"] <= volume_range[1])]
 
-# 2. Daily Change %
-fig2 = px.line(filtered_df, x="Date", y="Change_", title="Daily % Change Over Time")
-st.plotly_chart(fig2)
+    st.markdown(f"### Overview for {selected_company}")
 
-# 3. Volume Comparison
-fig3 = px.bar(filtered_df, x="Date", y=["Share_Volume", "Trade_Volume"],
-              title="Share vs Trade Volume", barmode="group")
-st.plotly_chart(fig3)
+    # 1. Price Trends
+    fig1 = px.line(filtered_df, x="Date", y=["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"],
+                   title="Stock Prices Over Time", labels={"value": "Price (Rs.)", "variable": "Metric"})
+    st.plotly_chart(fig1)
 
-# 4. Top Companies by Avg Trade Volume
-avg_volume = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(10)
-fig4 = px.bar(avg_volume, x=avg_volume.index, y=avg_volume.values,
-              title="Top 10 Companies by Avg. Trade Volume", labels={"x": "Company", "y": "Avg Trade Volume"})
-st.plotly_chart(fig4)
+    # 2. Daily Change %
+    fig2 = px.line(filtered_df, x="Date", y="Change_", title="Daily % Change Over Time")
+    st.plotly_chart(fig2)
 
-# 5. Gainers and Losers
-selected_day = st.sidebar.date_input("Pick a Day for Gainers/Losers", df["Date"].max())
-daily_df = df[df["Date"] == pd.to_datetime(selected_day)]
-top_gainers = daily_df.sort_values("Change_", ascending=False).head(5)
-top_losers = daily_df.sort_values("Change_", ascending=True).head(5)
+    # 3. Volume Comparison
+    fig3 = px.bar(filtered_df, x="Date", y=["Share_Volume", "Trade_Volume"],
+                  title="Share vs Trade Volume", barmode="group")
+    st.plotly_chart(fig3)
 
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("### Top 5 Gainers")
-    st.dataframe(top_gainers[["Company_Name", "Change_"]])
-with col2:
-    st.markdown("### Top 5 Losers")
-    st.dataframe(top_losers[["Company_Name", "Change_"]])
+    # 4. Top Companies by Avg Trade Volume
+    avg_volume = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(10)
+    fig4 = px.bar(avg_volume, x=avg_volume.index, y=avg_volume.values,
+                  title="Top 10 Companies by Avg. Trade Volume", labels={"x": "Company", "y": "Avg Trade Volume"})
+    st.plotly_chart(fig4)
 
-# 6. Volume vs Change Scatter
-fig6 = px.scatter(df, x="Trade_Volume", y="Change_", color="Company_Name",
-                  title="Volume vs Price Change", hover_data=["Date"])
-st.plotly_chart(fig6)
+    # 5. Gainers and Losers
+    selected_day = st.sidebar.date_input("Pick a Day for Gainers/Losers", df["Date"].max())
+    daily_df = df[df["Date"] == pd.to_datetime(selected_day)]
+    top_gainers = daily_df.sort_values("Change_", ascending=False).head(5)
+    top_losers = daily_df.sort_values("Change_", ascending=True).head(5)
 
-# 7. Box Plot - Price Distribution
-top_companies = df["Company_Name"].value_counts().head(10).index
-box_df = df[df["Company_Name"].isin(top_companies)]
-fig7 = px.box(box_df, x="Company_Name", y="Last_Trade_Rs", title="Price Distribution - Top Companies")
-st.plotly_chart(fig7)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Top 5 Gainers")
+        st.dataframe(top_gainers[["Company_Name", "Change_"]])
+    with col2:
+        st.markdown("### Top 5 Losers")
+        st.dataframe(top_losers[["Company_Name", "Change_"]])
 
-# 8. Highlighted Metric Chart
-fig8 = px.line(filtered_df, x="Date", y=price_metric,
-               title=f"Selected Price Metric: {price_metric.replace('_', ' ')}")
-st.plotly_chart(fig8)
+    # 6. Volume vs Change Scatter
+    fig6 = px.scatter(df, x="Trade_Volume", y="Change_", color="Company_Name",
+                      title="Volume vs Price Change", hover_data=["Date"])
+    st.plotly_chart(fig6)
 
-st.markdown("---")
-st.markdown("Dashboard built for 5DATA004W - University of Westminster")
+    # 7. Box Plot - Price Distribution
+    top_companies = df["Company_Name"].value_counts().head(10).index
+    box_df = df[df["Company_Name"].isin(top_companies)]
+    fig7 = px.box(box_df, x="Company_Name", y="Last_Trade_Rs", title="Price Distribution - Top Companies")
+    st.plotly_chart(fig7)
+
+    # 8. Highlighted Metric Chart
+    fig8 = px.line(filtered_df, x="Date", y=price_metric,
+                   title=f"Selected Price Metric: {price_metric.replace('_', ' ')}")
+    st.plotly_chart(fig8)
+
+    # 9. Animated Chart - Trade Volume by Company Over Time (Filtered)
+    st.markdown("### 📽️ Animated Trade Volume Over Time")
+    animation_companies = st.multiselect("Select Companies for Animation", companies, default=companies[:5])
+    animation_df = df[df["Company_Name"].isin(animation_companies)].copy()
+    animation_df = animation_df[(animation_df["Trade_Volume"] >= volume_range[0]) & (animation_df["Trade_Volume"] <= volume_range[1])]
+    animation_df["Date_str"] = animation_df["Date"].dt.strftime("%Y-%m-%d")
+    fig9 = px.bar(
+        animation_df,
+        x="Company_Name",
+        y="Trade_Volume",
+        color="Company_Name",
+        animation_frame="Date_str",
+        range_y=[0, df["Trade_Volume"].max()],
+        title="Trade Volume by Company Over Time"
+    )
+    st.plotly_chart(fig9)
+
+    st.markdown("---")
+    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
