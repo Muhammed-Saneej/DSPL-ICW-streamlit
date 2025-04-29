@@ -102,7 +102,7 @@ else:
     st.plotly_chart(fig8)
 
     # 9. Animated Chart - Trade Volume by Company Over Time (Filtered)
-    st.markdown("### 📽️ Animated Trade Volume Over Time")
+    st.markdown("### Animated Trade Volume Over Time")
     animation_companies = st.multiselect("Select Companies for Animation", companies, default=companies[:5])
     animation_df = df[df["Company_Name"].isin(animation_companies)].copy()
     animation_df = animation_df[(animation_df["Trade_Volume"] >= volume_range[0]) & (animation_df["Trade_Volume"] <= volume_range[1])]
