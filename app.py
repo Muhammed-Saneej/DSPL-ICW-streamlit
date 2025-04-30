@@ -140,14 +140,6 @@ with tab1:
     st.markdown("### Summary Statistics")
     st.dataframe(raw_filtered.describe(include='all'), use_container_width=True)
 
-    st.markdown("### Number of Records by Company")
-    record_count = raw_filtered["Company_Name"].value_counts()
-    st.bar_chart(record_count)
-
-    st.markdown("### Record Count by Date")
-    date_counts = raw_filtered["Date"].value_counts().sort_index()
-    st.line_chart(date_counts)
-
     st.markdown("---")
     st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
 
