@@ -4,6 +4,9 @@ import pandas as pd
 import plotly.express as px
 import os
 import base64
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import plotly.graph_objects as go
 
 # Page configuration
 st.set_page_config(page_title="Stock Dashboard", layout="wide")
@@ -20,7 +23,7 @@ def set_background(image_path):
         <style>
         .stApp {{
             background-image: url("data:image/png;base64,{base64_img}");
-            background-size: 100% 100%;
+            background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -83,8 +86,16 @@ min_volume = int(df["Trade_Volume"].min())
 max_volume = int(df["Trade_Volume"].max())
 volume_range = st.sidebar.slider("Trade Volume Range", min_value=min_volume, max_value=max_volume, value=(min_volume, max_volume))
 
+#  Preset filters
+st.sidebar.markdown("### Preset Filters")
+preset_filter = st.sidebar.radio("Select a preset view", ["None", "Top Gainers", "High Volume"])
+if preset_filter == "Top Gainers":
+    companies = df.groupby("Company_Name")["Change_"].mean().sort_values(ascending=False).head(5).index.tolist()
+elif preset_filter == "High Volume":
+    companies = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(5).index.tolist()
+
 # Create tabs
-tab1, tab2 = st.tabs(["Raw Data Viewer", "Data Visualizations"])
+tab1, tab2, tab3 = st.tabs(["Raw Data Viewer", "Data Visualizations", "Insights"])
 
 with tab1:
     st.title("Raw Dataset Viewer")
@@ -98,10 +109,10 @@ with tab1:
                       (df["Trade_Volume"] <= volume_range[1])]
 
     st.dataframe(raw_filtered, use_container_width=True)
-
-    # Download button
     csv = raw_filtered.to_csv(index=False).encode('utf-8')
     st.download_button("Download Filtered Data", csv, "filtered_data.csv", "text/csv")
+    st.markdown("---")
+    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
 
 with tab2:
     selected_company = st.selectbox("Select a Company", companies)
@@ -116,105 +127,79 @@ with tab2:
 
     st.markdown(f"### Overview for {selected_company}")
 
-    # 1. Price Trends
     fig1 = px.line(filtered_df, x="Date", y=["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"],
                    title="Stock Prices Over Time", labels={"value": "Price (Rs.)", "variable": "Metric"})
     st.plotly_chart(fig1, use_container_width=True)
 
-    # 2. Daily Change %
     fig2 = px.line(filtered_df, x="Date", y="Change_", title="Daily % Change Over Time")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # 3. Volume Comparison
     fig3 = px.bar(filtered_df, x="Date", y=["Share_Volume", "Trade_Volume"],
                   title="Share vs Trade Volume", barmode="group")
     st.plotly_chart(fig3, use_container_width=True)
 
-    # 4. Top Companies by Avg Trade Volume
-    avg_volume = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(10)
-    with st.expander("Top 10 Companies by Avg. Trade Volume"):
-        fig4 = px.bar(avg_volume, x=avg_volume.index, y=avg_volume.values,
-                      title="Top 10 Companies by Avg. Trade Volume", labels={"x": "Company", "y": "Avg Trade Volume"})
-        st.plotly_chart(fig4, use_container_width=True)
+    st.markdown("### Forecast Next Day's Last Trade Price (Linear Regression)")
 
-    # 5. Gainers and Losers
-    selected_day = st.date_input("Pick a Day for Gainers/Losers", df["Date"].max())
-    daily_df = df[df["Date"] == pd.to_datetime(selected_day)]
-    top_gainers = daily_df.sort_values("Change_", ascending=False).head(5)
-    top_losers = daily_df.sort_values("Change_", ascending=True).head(5)
+    forecast_all = st.checkbox("Run forecast for all companies", key="forecast_all_checkbox")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Top 5 Gainers")
-        st.dataframe(top_gainers[["Company_Name", "Change_"]])
-    with col2:
-        st.markdown("### Top 5 Losers")
-        st.dataframe(top_losers[["Company_Name", "Change_"]])
+    if forecast_all:
+        predictions = []
+        for company in df["Company_Name"].unique():
+            company_df = df[df["Company_Name"] == company].copy()
+            if len(company_df) >= 2:
+                company_df = company_df.sort_values("Date")
+                company_df["Day_Num"] = (company_df["Date"] - company_df["Date"].min()).dt.days
+                X = company_df[["Day_Num"]]
+                y = company_df["Last_Trade_Rs"]
+                model = LinearRegression().fit(X, y)
+                next_day = company_df["Day_Num"].max() + 1
+                pred_price = model.predict([[next_day]])[0]
+                predictions.append({"Company": company, "Predicted_Price": round(pred_price, 2)})
 
-    # 6. Volume vs Change Scatter
-    fig6 = px.scatter(df, x="Trade_Volume", y="Change_", color="Company_Name",
-                      title="Volume vs Price Change", hover_data=["Date"])
-    st.plotly_chart(fig6, use_container_width=True)
+        pred_df = pd.DataFrame(predictions).sort_values("Predicted_Price", ascending=False)
+        st.dataframe(pred_df, use_container_width=True)
 
-    # 7. Box Plot - Price Distribution
-    top_companies = df["Company_Name"].value_counts().head(10).index
-    box_df = df[df["Company_Name"].isin(top_companies)]
-    fig7 = px.box(box_df, x="Company_Name", y="Last_Trade_Rs", title="Price Distribution - Top Companies")
-    st.plotly_chart(fig7, use_container_width=True)
+    else:
+        if len(filtered_df) >= 2:
+            forecast_df = filtered_df[["Date", "Last_Trade_Rs"]].copy()
+            forecast_df["Day_Num"] = (forecast_df["Date"] - forecast_df["Date"].min()).dt.days
+            X = forecast_df[["Day_Num"]]
+            y = forecast_df["Last_Trade_Rs"]
+            model = LinearRegression().fit(X, y)
+            next_day = forecast_df["Day_Num"].max() + 1
+            predicted_price = model.predict([[next_day]])[0]
+            st.success(f"Predicted Last_Trade_Rs for next day: Rs. {predicted_price:.2f}")
+        else:
+            st.warning("Not enough data for forecasting.")
+    st.markdown("---")
+    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
 
-    # 8. Highlighted Metric Chart
-    fig8 = px.line(filtered_df, x="Date", y=price_metric,
-                   title=f"Selected Price Metric: {price_metric.replace('_', ' ')}")
-    st.plotly_chart(fig8, use_container_width=True)
+with tab3:
+    st.markdown("### Company Leaderboard")
+    leaderboard_option = st.selectbox("Rank by", ["Average % Gain", "Average Trade Volume"])
+    if leaderboard_option == "Average % Gain":
+        leader_df = df.groupby("Company_Name")["Change_"].mean().sort_values(ascending=False).head(10)
+    else:
+        leader_df = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(10)
+    fig_leader = px.bar(leader_df, x=leader_df.index, y=leader_df.values,
+                        labels={"x": "Company", "y": leaderboard_option}, title=f"Top 10 Companies by {leaderboard_option}")
+    st.plotly_chart(fig_leader, use_container_width=True)
 
-    # 8.5 Candlestick Chart
-    import plotly.graph_objects as go
-    if not filtered_df.empty:
-        fig_candle = go.Figure(data=[go.Candlestick(
-            x=filtered_df['Date'],
-            open=filtered_df['Open_Rs'],
-            high=filtered_df['High_Rs'],
-            low=filtered_df['Low_Rs'],
-            close=filtered_df['Last_Trade_Rs'],
-            increasing_line_color='green', decreasing_line_color='red'
-        )])
-        fig_candle.update_layout(title="Candlestick Chart - Daily Price Movements",
-                                 xaxis_title="Date", yaxis_title="Price (Rs.)")
-        st.plotly_chart(fig_candle, use_container_width=True)
+    # Volatility Indicator
+    st.markdown("### Volatility Indicator")
+    volatility = df.groupby("Company_Name")["Change_"].std().sort_values(ascending=False).head(5)
+    fig_vol = px.bar(volatility, x=volatility.index, y=volatility.values,
+                     title="Top 5 Most Volatile Companies", labels={"x": "Company", "y": "Std Dev of % Change"})
+    st.plotly_chart(fig_vol, use_container_width=True)
 
-    # 9. Animated Trade Volume Over Time (Filtered)
-    st.markdown("### Animated Trade Volume Over Time")
-    animation_companies = st.multiselect("Select Companies for Animation", companies, default=companies[:5])
-    animation_df = df[df["Company_Name"].isin(animation_companies)].copy()
-    animation_df = animation_df[(animation_df["Trade_Volume"] >= volume_range[0]) & (animation_df["Trade_Volume"] <= volume_range[1])]
-    animation_df["Date_str"] = animation_df["Date"].dt.strftime("%Y-%m-%d")
-    fig9 = px.bar(
-        animation_df,
-        x="Company_Name",
-        y="Trade_Volume",
-        color="Company_Name",
-        animation_frame="Date_str",
-        range_y=[0, df["Trade_Volume"].max()],
-        title="Trade Volume by Company Over Time"
-    )
-    fig9.update_layout(
-        updatemenus=[{
-            "type": "buttons",
-            "buttons": [
-                {
-                    "label": "Play",
-                    "method": "animate",
-                    "args": [None, {"frame": {"duration": 1000, "redraw": True}, "fromcurrent": True}]
-                },
-                {
-                    "label": "Pause",
-                    "method": "animate",
-                    "args": [[None], {"frame": {"duration": 0}, "mode": "immediate"}]
-                }
-            ]
-        }]
-    )
-    st.plotly_chart(fig9, use_container_width=True)
+    # Heatmap of Daily % Changes
+    st.markdown("### Heatmap of Daily % Changes")
+    heatmap_data = df.pivot_table(index="Company_Name", columns="Date", values="Change_")
+    fig_heatmap = px.imshow(heatmap_data,
+                            labels=dict(x="Date", y="Company", color="% Change"),
+                            title="Heatmap of Daily % Changes",
+                            aspect="auto")
+    st.plotly_chart(fig_heatmap, use_container_width=True)
 
     st.markdown("---")
     st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
