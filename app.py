@@ -49,7 +49,7 @@ def sidebar_bg(image_file):
         unsafe_allow_html=True
     )
 
-sidebar_bg("side bar.jpeg")
+sidebar_bg("side bar1.jpeg")
 
 # Check if file exists
 file_path = "5 days data set.csv"
