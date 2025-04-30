@@ -30,7 +30,7 @@ def set_background(image_path):
         unsafe_allow_html=True
     )
 
-set_background("wall.png")
+set_background("wall1.png")
 
 
 # Check if file exists
