@@ -32,6 +32,7 @@ def set_background(image_path):
 
 set_background("wall1.png")
 
+# Sidebar background
 def sidebar_bg(image_file):
     with open(image_file, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
@@ -63,6 +64,9 @@ df = df.drop(columns=['Symbol'], errors='ignore')
 df.columns = df.columns.str.strip().str.replace(r"[^\w\s]", "", regex=True).str.replace(" ", "_")
 df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
 
+# Add main title at the top
+st.title("Sri Lankan Stock Market Dashboard")
+
 # Common Sidebar Filters
 st.sidebar.header("Global Filters")
 companies = sorted(df["Company_Name"].unique())
@@ -87,7 +91,7 @@ with tab1:
     st.dataframe(raw_filtered, use_container_width=True)
 
 with tab2:
-    st.title("Sri Lankan Stock Market Dashboard")
+
     selected_company = st.selectbox("Select a Company", companies)
     date_range = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()], key="viz_date_range")
     price_metric = st.selectbox("Price Metric to Highlight", ["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"])
