@@ -202,31 +202,29 @@ with tab2:
     forecast_all = st.checkbox("Run forecast for all companies", key="forecast_all_checkbox")
     if forecast_all:
         predictions = []
-        for company in df["Company_Name"].unique():
-            company_df = df[df["Company_Name"] == company].copy()
-            if len(company_df) >= 2:
-                company_df = company_df.sort_values("Date")
-                company_df["Day_Num"] = (company_df["Date"] - company_df["Date"].min()).dt.days
-                X = company_df[["Day_Num"]]
-                y = company_df["Last_Trade_Rs"]
-                model = LinearRegression().fit(X, y)
-                next_day = company_df["Day_Num"].max() + 1
-                pred_price = model.predict([[next_day]])[0]
-                predictions.append({"Company": company, "Predicted_Price": round(pred_price, 2)})
-        pred_df = pd.DataFrame(predictions).sort_values("Predicted_Price", ascending=False)
-        st.dataframe(pred_df, use_container_width=True)
-    else:
-        if len(filtered_df) >= 2:
-            forecast_df = filtered_df[["Date", "Last_Trade_Rs"]].copy()
-            forecast_df["Day_Num"] = (forecast_df["Date"] - forecast_df["Date"].min()).dt.days
-            X = forecast_df[["Day_Num"]]
-            y = forecast_df["Last_Trade_Rs"]
+    for company in df["Company_Name"].unique():
+        company_df = df[df["Company_Name"] == company].copy()
+        if len(company_df) >= 2:
+            company_df = company_df.sort_values("Date")
+            company_df["Day_Num"] = (company_df["Date"] - company_df["Date"].min()).dt.days
+            X = company_df[["Day_Num"]]
+            y = company_df["Last_Trade_Rs"]
             model = LinearRegression().fit(X, y)
-            next_day = forecast_df["Day_Num"].max() + 1
-            predicted_price = model.predict([[next_day]])[0]
-            st.success(f"Predicted Last_Trade_Rs for next day: Rs. {predicted_price:.2f}")
-        else:
-            st.warning("Not enough data for forecasting.")
+            next_day = company_df["Day_Num"].max() + 1
+            pred_price = model.predict([[next_day]])[0]
+            forecast_date = company_df["Date"].max() + pd.Timedelta(days=1)
+            predictions.append({
+                "Company": company,
+                "Forecast_Date": forecast_date.strftime("%Y-%m-%d"),
+                "Predicted_Last_Trade_Rs": round(pred_price, 2)
+            })
+
+    pred_df = pd.DataFrame(predictions).sort_values("Predicted_Last_Trade_Rs", ascending=False)
+    st.dataframe(pred_df, use_container_width=True)
+
+    # Download button
+    forecast_csv = pred_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Forecast Data", forecast_csv, file_name="forecast_next_day.csv", mime="text/csv")
 
     st.markdown("---")
     st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
