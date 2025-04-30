@@ -3,6 +3,35 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+import base64
+
+# Page configuration
+st.set_page_config(page_title="Stock Dashboard", layout="wide")
+
+# Background Image
+def get_base64(file_path):
+    with open(file_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+def set_background(image_path):
+    base64_img = get_base64(image_path)
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{base64_img}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+set_background("wall.png")
+
 
 # Check if file exists
 file_path = "5 days data set.csv"
@@ -15,9 +44,6 @@ df = pd.read_csv(file_path)
 df = df.drop(columns=['Symbol'], errors='ignore')
 df.columns = df.columns.str.strip().str.replace(r"[^\w\s]", "", regex=True).str.replace(" ", "_")
 df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
-
-# Page configuration
-st.set_page_config(page_title="Stock Dashboard", layout="wide")
 
 # Common Sidebar Filters
 st.sidebar.header("Global Filters")
@@ -55,7 +81,7 @@ with tab2:
                      (df["Trade_Volume"] <= volume_range[1])]
 
     st.markdown(f"### Overview for {selected_company}")
-
+    
     # 1. Price Trends
     fig1 = px.line(filtered_df, x="Date", y=["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"],
                    title="Stock Prices Over Time", labels={"value": "Price (Rs.)", "variable": "Metric"})
