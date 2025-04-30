@@ -10,6 +10,21 @@ if not os.path.exists(file_path):
     st.error("Data file not found. Please ensure '5 days data set.csv' is in the app directory.")
     st.stop()
 
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://github.com/Muhammed-Saneej/DSPL-ICW-streamlit/wall.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Load and prepare data
 df = pd.read_csv(file_path)
 df = df.drop(columns=['Symbol'], errors='ignore')
