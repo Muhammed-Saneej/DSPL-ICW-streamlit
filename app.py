@@ -32,7 +32,7 @@ tab1, tab2 = st.tabs(["Raw Data Viewer", "Data Visualizations"])
 with tab1:
     st.title("Raw Dataset Viewer")
     selected_companies = st.multiselect("Filter by Companies", companies, default=companies)
-    selected_dates = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
+    selected_dates = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()], key="raw_date_range")
 
     raw_filtered = df[(df["Company_Name"].isin(selected_companies)) &
                       (df["Date"] >= pd.to_datetime(selected_dates[0])) &
@@ -45,7 +45,7 @@ with tab1:
 with tab2:
     st.title("Sri Lankan Stock Market Dashboard")
     selected_company = st.selectbox("Select a Company", companies)
-    date_range = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()])
+    date_range = st.date_input("Select Date Range", [df["Date"].min(), df["Date"].max()], key="viz_date_range")
     price_metric = st.selectbox("Price Metric to Highlight", ["Open_Rs", "High_Rs", "Low_Rs", "Last_Trade_Rs"])
 
     filtered_df = df[(df["Company_Name"] == selected_company) &
