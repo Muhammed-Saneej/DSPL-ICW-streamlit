@@ -32,6 +32,24 @@ def set_background(image_path):
 
 set_background("wall1.png")
 
+def sidebar_bg(image_file):
+    with open(image_file, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+
+    st.markdown(
+        f"""
+        <style>
+        [data-testid="stSidebar"] > div:first-child {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+sidebar_bg("side bar.jpeg")
 
 # Check if file exists
 file_path = "5 days data set.csv"
