@@ -21,12 +21,24 @@ def set_background(image_path):
     st.markdown(
         f"""
         <style>
-        .stApp {{
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-image: url("data:image/png;base64,{base64_img}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+            z-index: -1;
+            filter: blur(8px);     /* this blurs the image only */
+            opacity:0.7;
+        }}
+        .stApp {{
+            background: transparent !important;  /* make sure the content sits on top */
         }}
         </style>
         """,
@@ -44,9 +56,22 @@ def sidebar_bg(image_file):
         f"""
         <style>
         [data-testid="stSidebar"] > div:first-child {{
+            position: relative;
+            z-index: 0;
+        }}
+        [data-testid="stSidebar"] > div:first-child::before {{
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-image: url("data:image/png;base64,{encoded}");
             background-size: cover;
             background-position: center;
+            filter: blur(8px);  /* ~25% blur */
+            opacity: 0.9;
+            z-index: -1;
         }}
         </style>
         """,
