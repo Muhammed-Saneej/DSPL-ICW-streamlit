@@ -113,11 +113,11 @@ volume_range = st.sidebar.slider("Trade Volume Range", min_value=min_volume, max
 
 # Preset filters
 st.sidebar.markdown("### Preset Filters")
-preset_filter = st.sidebar.radio("Select a preset view", ["None", "Top Gainers", "High Volume"])
+preset_filter = st.sidebar.radio("Select a preset view", ["All", "Top Gainers", "High Volume"])
 if preset_filter == "Top Gainers":
-    companies = df.groupby("Company_Name")["Change_"].mean().sort_values(ascending=False).head(5).index.tolist()
+    companies = df.groupby("Company_Name")["Change_"].mean().sort_values(ascending=False).head(10).index.tolist()
 elif preset_filter == "High Volume":
-    companies = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(5).index.tolist()
+    companies = df.groupby("Company_Name")["Trade_Volume"].mean().sort_values(ascending=False).head(10).index.tolist()
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["Raw Data Viewer", "Data Visualizations", "Insights"])
