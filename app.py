@@ -141,7 +141,7 @@ with tab1:
     st.dataframe(raw_filtered.describe(include='all'), use_container_width=True)
 
     st.markdown("---")
-    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
+    st.markdown("Dashboard built for 5DATA004C.2 Data Science Project Lifecycle (IIT Sri Lanka)")
 
 with tab2:
     selected_company = st.selectbox("Select a Company", companies)
@@ -219,7 +219,7 @@ with tab2:
     st.download_button("Download Forecast Data", forecast_csv, file_name="forecast_next_day.csv", mime="text/csv")
 
     st.markdown("---")
-    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
+    st.markdown("Dashboard built for 5DATA004C.2 Data Science Project Lifecycle (IIT Sri Lanka)")
 
 with tab3:
     st.markdown("### Company Leaderboard")
@@ -262,4 +262,4 @@ with tab3:
     st.plotly_chart(fig_box, use_container_width=True)
 
     st.markdown("---")
-    st.markdown("Dashboard built for 5DATA004W Data Science Project Lifecycle (IIT Sri Lanka)")
+    st.markdown("Dashboard built for 5DATA004C.2 Data Science Project Lifecycle (IIT Sri Lanka)")
