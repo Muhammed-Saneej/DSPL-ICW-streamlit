@@ -1,5 +1,5 @@
 streamlit
 pandas
-potly
+plotly
 scikit-learn
 numpy
